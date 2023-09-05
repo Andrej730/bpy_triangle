@@ -39,8 +39,8 @@ bl_info = {
     "name": "Triangle",
     "author": "Tom Svilans (Blender wrapper)",
     "version": (1, 0, 0),
-    "blender": (2, 79, 0),
-    "location": "View3D > Toolbar",
+    "blender": (3, 0, 0),
+    "location": "View3D > Tool",
     "warning": "",
     "description": "A two-dimensional quality mesh generator and Delaunay triangulator.",
     "wiki_url": "http://www.cs.cmu.edu/~quake/triangle.html"
@@ -69,7 +69,8 @@ def get_nonmanifold_edges(mymesh):
     return culprits
 
 def triangulate_object(obj_in, args):
-    mesh_in = obj_in.to_mesh(bpy.context.scene, True, 'RENDER')
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh_in = obj_in.evaluated_get(depsgraph).to_mesh()
     verts = [x.co for x in mesh_in.vertices]
     Nv = len(verts)
     faces = [[y for y in x.vertices] for x in mesh_in.polygons]
@@ -104,56 +105,54 @@ class Triangulate(bpy.types.Operator):
     bl_label = "Triangulate (Triangle)"
     bl_options = {'REGISTER', 'UNDO'}
 
-    args = StringProperty(
+    args: StringProperty(
             name="Args",
             description="Input arguments for Triangle",
             default="pq20a1ziV",
             )
-
-    use_args = BoolProperty(
+    use_args: BoolProperty(
             name="Use args",
             description="Use command line arg string instead of checkboxes",
             default=False)
-
-    cl_p = BoolProperty(
+    cl_p: BoolProperty(
             name="PSLG",
             description="Triangulates a Planar Straight Line Graph (.poly file)",
             default=True)
-    cl_r = BoolProperty(
+    cl_r: BoolProperty(
             name="Refine",
             description="Refines a previously generated mesh",
             default=False)
-    cl_q = BoolProperty(
+    cl_q: BoolProperty(
             name="Quality",
             description="Quality mesh generation with no angles smaller than the specified angle",
             default=True)
-    cl_q_angle = FloatProperty(
+    cl_q_angle: FloatProperty(
             name="Quality angle",
             description="Angle limit for quality mesh generation",
             default=20.0,
             max=35.0,
             min=0.0)
-    cl_a = BoolProperty(
+    cl_a: BoolProperty(
             name="Area",
             description="Imposes a maximum triangle area constraint",
             default = False)
-    cl_a_value = FloatProperty(
+    cl_a_value: FloatProperty(
             name="Area value",
             description="Value for area constraint",
             default=1.0,
             min=0.001)
-    cl_c = BoolProperty(
+    cl_c: BoolProperty(
             name="Convex hull",
             description="Encloses the convex hull with segments",
             default=False)
-    cl_D = BoolProperty(
+    cl_D: BoolProperty(
             name="Delaunay",
             description="Conforming Delaunay: use this switch if you want " \
             "all triangles in the mesh to be Delaunay, and not just constrained " \
             "Delaunay; or if you want to ensure that all Voronoi vertices lie within " \
             "the triangulation",
             default=False)
-    cl_v = BoolProperty(
+    cl_v: BoolProperty(
             name="Voronoi",
             description="Outputs the Voronoi diagram associated with the triangulation. "\
             "Does not attempt to detect degeneracies, so some Voronoi vertices may be duplicated",
@@ -214,10 +213,10 @@ class Triangulate(bpy.types.Operator):
             row.prop(self, "cl_p")
             layout.separator()
 
-            #row = col.row(align=True)
-            #row.prop(self, "cl_v")
-            #row.prop(self, "cl_D")
-            #layout.separator()
+            # row = col.row(align=True)
+            # row.prop(self, "cl_v")
+            # row.prop(self, "cl_D")
+            # layout.separator()
 
             row = box.row(align=True)
             row.prop(self, "cl_r")
@@ -238,15 +237,15 @@ class Triangulate(bpy.types.Operator):
                 v.select = True
 
             obj.matrix_world = o.matrix_world
-            ctx.scene.objects.link(obj)
+            ctx.scene.collection.objects.link(obj)
 
         return {'FINISHED'}
 
 class TrianglePanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = 'Tools'
+    bl_region_type = 'UI'
+    bl_category = "Tool"
     bl_context = "objectmode"
     bl_label = "Triangle"
 
